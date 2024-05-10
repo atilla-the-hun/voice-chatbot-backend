@@ -165,7 +165,6 @@ let isListening = false;
 let chatOpened = false;
 let listeningTimeout = null;
 const TIMEOUT_DELAY_MS = 35000; // 15 seconds in milliseconds
-const CONFIDENCE_THRESHOLD = 0.5; // Adjust as needed (0 to 1)
 
 document.addEventListener('DOMContentLoaded', startSession);
 
@@ -246,20 +245,14 @@ recognition.onresult = function (event) {
 
     const currentResultIndex = event.resultIndex;
     for (let i = currentResultIndex; i < event.results.length; ++i) {
-        const result = event.results[i][0];
-        const transcript = result.transcript.trim();
-        const confidence = result.confidence;
-
-        if (result.isFinal && confidence >= CONFIDENCE_THRESHOLD) {
+        if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim();
             startButton.disabled = true;
             sendTextButton.disabled = true;
             resetButton.disabled = true;
             processSpeech(transcript);
             recognition.stop();
             break;
-        } else {
-            console.log('Ignoring low-confidence result:', transcript);
-            // Optionally handle low-confidence results (e.g., ignore or log)
         }
     }
 };
@@ -275,7 +268,6 @@ function startSession() {
     // You can add any initialization logic here if needed
     
     // Create and append the reset button
-    const startButtonContainer = document.getElementById('startButtonContainer');
     const resetButton = document.createElement('button');
     resetButton.id = 'resetButton';
     resetButton.className = 'btn btn-secondary';
