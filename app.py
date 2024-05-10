@@ -18,7 +18,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Initialize Groq and OpenAI clients with environment variables
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 history_messages = []
