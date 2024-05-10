@@ -147,229 +147,232 @@
 </div>
 
 <script>
-    const chatIcon = document.getElementById('chatIcon');
-    const chatTooltip = document.getElementById('chatTooltip');
-    const chatContainer = document.getElementById('chatContainer');
-    const startButton = document.getElementById('startButton');
-    const textInput = document.getElementById('textInput');
-    const echoTextEl = document.getElementById('echoText');
-    const sendTextButton = document.getElementById('sendTextButton');
-    const processingIndicator = document.getElementById('processingIndicator');
-    
-    let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-    recognition.lang = 'en-US';
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.continuous = true;
-    let isListening = false;
-    let chatOpened = false;
-    let listeningTimeout = null;
-    const TIMEOUT_DELAY_MS = 35000; // 35 seconds in milliseconds
-    
-    document.addEventListener('DOMContentLoaded', startSession);
-    
-    chatIcon.addEventListener('click', toggleChatContainer);
-    chatTooltip.addEventListener('click', toggleChatContainer); // Add click listener to chatTooltip
-    startButton.addEventListener('click', toggleListening);
-    sendTextButton.addEventListener('click', sendMessage);
-    textInput.addEventListener('keypress', function(event) {
-        if (event.key === 'Enter') {
-            sendMessage();
-        }
-    });
-    
-    function toggleChatContainer() {
-        chatOpened = !chatOpened;
-    
-        if (chatOpened) {
-            chatContainer.style.display = 'block';
-            startButton.disabled = false;
-            sendTextButton.disabled = false;
-            resetButton.disabled = false;
-        } else {
-            chatContainer.style.display = 'none';
-            recognition.stop();
-        }
+const chatIcon = document.getElementById('chatIcon');
+const chatTooltip = document.getElementById('chatTooltip');
+const chatContainer = document.getElementById('chatContainer');
+const startButton = document.getElementById('startButton');
+const textInput = document.getElementById('textInput');
+const echoTextEl = document.getElementById('echoText');
+const sendTextButton = document.getElementById('sendTextButton');
+const processingIndicator = document.getElementById('processingIndicator');
+
+let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'en-US';
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
+recognition.continuous = true;
+let isListening = false;
+let chatOpened = false;
+let listeningTimeout = null;
+const TIMEOUT_DELAY_MS = 35000; // 35 seconds in milliseconds
+const CONFIDENCE_THRESHOLD = 0.5; // Adjust as needed (0 to 1)
+
+document.addEventListener('DOMContentLoaded', startSession);
+
+chatIcon.addEventListener('click', toggleChatContainer);
+chatTooltip.addEventListener('click', toggleChatContainer);
+startButton.addEventListener('click', toggleListening);
+sendTextButton.addEventListener('click', sendMessage);
+textInput.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
     }
-    
-    function toggleListening() {
-        if (isListening) {
-            recognition.stop();
-        } else {
-            recognition.start();
-        }
-    }
-    
-    function sendMessage() {
-        const text = textInput.value.trim();
-        if (text) {
-            processSpeech(text);
-            textInput.value = '';
-            
-            // Disable buttons after sending message
-            startButton.disabled = true;
-            sendTextButton.disabled = true;
-            resetButton.disabled = true;
-        }
-    }
-    
-    recognition.onstart = function () {
-        isListening = true;
-        startButton.disabled = true;
-        startButton.textContent = "Listening...";
-        sendTextButton.disabled = true;
-        resetButton.disabled = true;
-    
-        // Set a timeout to stop recognition after TIMEOUT_DELAY_MS milliseconds
-        listeningTimeout = setTimeout(() => {
-            if (isListening) {
-                recognition.stop();
-                isListening = false;
-                startButton.textContent = "🎙️ Start Listening";
-                reEnableButtons();
-            }
-        }, TIMEOUT_DELAY_MS);
-    };
-    
-    recognition.onend = function () {
-        isListening = false;
-        startButton.textContent = "🎙️ Start Listening";
-        clearTimeout(listeningTimeout);
-        reEnableButtons();
-    };
-    
-    recognition.onresult = function (event) {
-        clearTimeout(listeningTimeout);
-    
-        const currentResultIndex = event.resultIndex;
-        for (let i = currentResultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                const transcript = event.results[i][0].transcript.trim();
-                const confidence = event.results[i][0].confidence;
-    
-                // Adjust this threshold as needed based on your requirements
-                const confidenceThreshold = 0.5; // Example threshold
-    
-                if (confidence >= confidenceThreshold) {
-                    startButton.disabled = true;
-                    sendTextButton.disabled = true;
-                    resetButton.disabled = true;
-                    processSpeech(transcript);
-                    recognition.stop();
-                } else {
-                    console.log('Low confidence result:', transcript);
-                    // Optionally handle low confidence results (e.g., ignore or log)
-                }
-    
-                break;
-            }
-        }
-    };
-    
-    recognition.onerror = function (event) {
-        console.error('Speech recognition error', event.error);
-        clearTimeout(listeningTimeout);
-        reEnableButtons();
-    };
-    
-    function startSession() {
-        // Create and append the reset button
-        const resetButton = document.createElement('button');
-        resetButton.id = 'resetButton';
-        resetButton.className = 'btn btn-secondary';
-        resetButton.textContent = 'Enable Disabled Buttons';
-        startButtonContainer.appendChild(resetButton);
-    
-        // Add event listener to the reset button
-        resetButton.addEventListener('click', function() {
-            reEnableButtons();
-        });
-    
-        resetButton.style.display = 'none'; // Hide the reset button
-    }
-    
-    function processSpeech(text) {
-        const userEntry = document.createElement('div');
-        userEntry.className = 'chat-entry user-text'; // Apply user-text class
-        userEntry.innerHTML = `<strong>You:</strong> ${text}`;
-    
-        // Prepend the user's chat entry to the top of the chat container
-        echoTextEl.insertBefore(userEntry, echoTextEl.firstChild);
-    
-        fetch('https://voice-chatbot-backend-2.onrender.com/process-speech', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: text }),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            const aiText = data.response;
-            const aiEntry = document.createElement('div');
-            aiEntry.className = 'chat-entry ai-text';
-            aiEntry.innerHTML = `<strong>AI:</strong> ${aiText}`;
-    
-            // Prepend the AI's chat entry to the top of the chat container
-            echoTextEl.insertBefore(aiEntry, echoTextEl.firstChild);
-    
-            speak(aiText);
-        })
-        .catch(error => {
-            console.error('Error during AI processing:', error);
-            reEnableButtons();
-        });
-    }
-    
-    function speak(text) {
-        processingIndicator.style.display = 'block';
-    
-        startButton.disabled = true;
-        sendTextButton.disabled = true;
-        resetButton.disabled = true;
-    
-        fetch('https://voice-chatbot-backend-2.onrender.com/synthesize-speech', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: text }),
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.blob();
-        })
-        .then(blob => {
-            const audioUrl = URL.createObjectURL(blob);
-            const audio = new Audio(audioUrl);
-    
-            audio.onended = function () {
-                processingIndicator.style.display = 'none';
-                reEnableButtons();
-            };
-    
-            audio.play();
-        })
-        .catch(error => {
-            console.error('Error during TTS synthesis:', error);
-            reEnableButtons();
-        });
-    }
-    
-    function reEnableButtons() {
+});
+
+function toggleChatContainer() {
+    chatOpened = !chatOpened;
+
+    if (chatOpened) {
+        chatContainer.style.display = 'block';
         startButton.disabled = false;
         sendTextButton.disabled = false;
         resetButton.disabled = false;
+    } else {
+        chatContainer.style.display = 'none';
+        recognition.stop();
     }
-    
-    </script>
-    
+}
+
+function toggleListening() {
+    if (isListening) {
+        recognition.stop();
+    } else {
+        recognition.start();
+    }
+}
+
+function sendMessage() {
+    const text = textInput.value.trim();
+    if (text) {
+        processSpeech(text);
+        textInput.value = '';
+
+        // Disable buttons after sending message
+        startButton.disabled = true;
+        sendTextButton.disabled = true;
+        resetButton.disabled = true;
+    }
+}
+
+recognition.onstart = function () {
+    isListening = true;
+    startButton.disabled = true;
+    startButton.textContent = "Listening...";
+    sendTextButton.disabled = true;
+    resetButton.disabled = true;
+
+    // Set a timeout to stop recognition after TIMEOUT_DELAY_MS milliseconds
+    listeningTimeout = setTimeout(() => {
+        if (isListening) {
+            recognition.stop();
+            isListening = false;
+            startButton.textContent = "🎙️ Start Listening";
+            reEnableButtons();
+            resetButton.disabled = false;
+        }
+    }, TIMEOUT_DELAY_MS);
+};
+
+recognition.onend = function () {
+    isListening = false;
+    startButton.textContent = "🎙️ Start Listening";
+    clearTimeout(listeningTimeout);
+};
+
+recognition.onresult = function (event) {
+    clearTimeout(listeningTimeout);
+
+    const currentResultIndex = event.resultIndex;
+    for (let i = currentResultIndex; i < event.results.length; ++i) {
+        const result = event.results[i][0];
+        const transcript = result.transcript.trim();
+        const confidence = result.confidence;
+
+        if (result.isFinal && confidence >= CONFIDENCE_THRESHOLD) {
+            startButton.disabled = true;
+            sendTextButton.disabled = true;
+            resetButton.disabled = true;
+            processSpeech(transcript);
+            recognition.stop();
+            break;
+        } else {
+            console.log('Ignoring low-confidence result:', transcript);
+            // Optionally handle low-confidence results (e.g., ignore or log)
+        }
+    }
+};
+
+recognition.onerror = function (event) {
+    console.error('Speech recognition error', event.error);
+    clearTimeout(listeningTimeout);
+    resetButton.disabled = false;
+    reEnableButtons();
+};
+
+function startSession() {
+    // You can add any initialization logic here if needed
+
+    // Create and append the reset button
+    const startButtonContainer = document.getElementById('startButtonContainer');
+    const resetButton = document.createElement('button');
+    resetButton.id = 'resetButton';
+    resetButton.className = 'btn btn-secondary';
+    resetButton.textContent = 'Enable Disabled Buttons';
+    startButtonContainer.appendChild(resetButton);
+
+    // Add event listener to the reset button
+    resetButton.addEventListener('click', function() {
+        startButton.disabled = false;
+        sendTextButton.disabled = false;
+        resetButton.disabled = false;
+    });
+
+    resetButton.style.display = 'none'; // Hide the reset button
+}
+
+function processSpeech(text) {
+    const userEntry = document.createElement('div');
+    userEntry.className = 'chat-entry user-text'; // Apply user-text class
+    userEntry.innerHTML = `<strong>You:</strong> ${text}`;
+
+    // Prepend the user's chat entry to the top of the chat container
+    echoTextEl.insertBefore(userEntry, echoTextEl.firstChild);
+
+    fetch('https://voice-chatbot-backend-2.onrender.com/process-speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const aiText = data.response;
+        const aiEntry = document.createElement('div');
+        aiEntry.className = 'chat-entry ai-text';
+        aiEntry.innerHTML = `<strong>AI:</strong> ${aiText}`;
+
+        // Prepend the AI's chat entry to the top of the chat container
+        echoTextEl.insertBefore(aiEntry, echoTextEl.firstChild);
+
+        speak(aiText);
+    })
+    .catch(error => {
+        console.error('Error during AI processing:', error);
+        reEnableButtons();
+    });
+}
+
+function speak(text) {
+    processingIndicator.style.display = 'block';
+
+    startButton.disabled = true;
+    sendTextButton.disabled = true;
+    resetButton.disabled = true;
+
+    fetch('https://voice-chatbot-backend-2.onrender.com/synthesize-speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+
+        audio.onended = function () {
+            processingIndicator.style.display = 'none';
+            reEnableButtons();
+            recognition.start();
+        };
+
+        audio.play();
+    })
+    .catch(error => {
+        console.error('Error during TTS synthesis:', error);
+        reEnableButtons();
+    });
+}
+
+function reEnableButtons() {
+    startButton.disabled = false;
+    sendTextButton.disabled = false;
+    resetButton.disabled = false;
+}
+
+
+</script>
 </body>
 </html>
