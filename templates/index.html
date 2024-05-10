@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voice Chatbot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Style for the floating chat icon */
+        #chatIcon {
+            position: fixed;
+            bottom: 20px;
+            right: 20px; /* Adjusted to position on the lower right side */
+            z-index: 9999; /* Ensure the icon is always on top */
+            background-color: #007bff;
+            color: #fff;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 50px;
+            cursor: pointer;
+        }
+
+        /* Default size for desktop */
+#chatIcon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 25px;
+}
+
+/* Smaller size for mobile phones */
+@media only screen and (max-width: 768px) {
+    #chatIcon {
+        width: 40px;
+        height: 40px;
+        line-height: 38px;
+        font-size: 25px;
+    }
+}
+
+        #chatContainer {
+            display: none; /* Hide the chat container initially */
+            position: fixed;
+            bottom: 100px;
+            right: 50px; /* Adjust the distance from the right edge */
+            z-index: 9999; /* Ensure the chat container is below the icon */
+            width: 25%; /* Set width to 25% of the viewport */
+            max-width: 320px; /* Set max-width to avoid overly narrow or wide windows */
+            height: 550px; /* Set a fixed height for the chat container */
+            overflow-y: auto; /* Enable vertical scroll bar */
+        }
+
+        /* Smaller size for mobile phones */
+@media only screen and (max-width: 768px) {
+    #chatContainer {
+        width: 300px;
+        height: 300px;
+    }
+    #processingIndicator {
+        margin-top: 60px;
+    }
+}
+
+        /* Style for the processing indicator */
+        #processingIndicator {
+            display: none;
+            position: fixed;
+            top: 20px; /* Adjusted to position just above the chat window */
+            right: 160px; /* Adjusted to position on the right side */
+            z-index: 9999;
+            text-align: center;
+            margin-bottom: 10px; /* Adjust margin as needed */
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating chat icon -->
+    <div id="chatIcon">💬</div>
+
+    <!-- Chat container -->
+    <div id="chatContainer" class="shadow p-3 bg-white rounded">
+        <h5>Zoltan's AI Voice Assistant</h5>
+        <p>Click "Start Listening" and speak into your device's microphone. 
+            Some devices require your authorization for this AI assistant to use your microphone. 
+            Click "Allow" to continue use of this AI assistant.</p>
+        <div id="startButtonContainer">
+            <button id="startButton" class="btn btn-primary talk-btn">🎙️ Start Listening</button>
+        </div>
+        <div id="echoText" class="mb-3"></div>
+    </div>
+
+    <!-- Processing indicator -->
+    <div id="processingIndicator">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p>Processing...</p>
+    </div>
+
+    <script>
+        const chatIcon = document.getElementById('chatIcon');
+        const chatContainer = document.getElementById('chatContainer');
+        const processingIndicator = document.getElementById('processingIndicator');
+        let chatOpened = false;
+
+        // Toggle visibility of the chat container when the chat icon is clicked
+        chatIcon.addEventListener('click', function() {
+            if (!chatOpened) {
+                // Open the chat container on the first click
+                chatContainer.style.display = 'block';
+                chatOpened = true;
+            } else {
+                // Toggle visibility on subsequent clicks
+                if (chatContainer.style.display === 'none') {
+                    chatContainer.style.display = 'block';
+                } else {
+                    chatContainer.style.display = 'none';
+                }
+            }
+        });
+
+        // Existing JavaScript code related to the chat functionality...
+        const startButton = document.getElementById('startButton');
+        const echoTextEl = document.getElementById('echoText');
+        let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+        recognition.continuous = true; 
+        let isListening = false;
+
+        document.addEventListener('DOMContentLoaded', startSession);
+
+        recognition.onstart = function() {
+            isListening = true;
+            startButton.textContent = "Stop Listening";
+        };
+
+        recognition.onend = function() {
+            isListening = false;
+            startButton.textContent = "🎙️ Start Listening";
+        };
+
+        recognition.onresult = function(event) {
+            const currentResultIndex = event.resultIndex;
+
+            for (let i = currentResultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    const transcript = event.results[i][0].transcript.trim();
+                    processSpeech(transcript);
+                    recognition.stop(); // Stop listening immediately after detecting final user speech
+                    break; // Exit loop after processing the final result
+                }
+            }
+        };
+
+        recognition.onerror = function(event) {
+            console.error('Speech recognition error', event.error);
+        };
+
+        startButton.addEventListener('click', function() {
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }, false);
+
+        function startSession() {
+            fetch('http://localhost:5000/start-speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+        }
+
+        function processSpeech(text) {
+            const userEntry = document.createElement('div');
+            userEntry.className = 'chat-entry user-text';
+            userEntry.innerHTML = `<strong>You:</strong> ${text}`;
+            echoTextEl.prepend(userEntry);
+            
+            fetch('http://localhost:5000/process-speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                const aiText = data.response;
+                const aiEntry = document.createElement('div');
+                aiEntry.className = 'chat-entry ai-text';
+                aiEntry.innerHTML = `<strong>AI:</strong> ${aiText}`;
+                echoTextEl.prepend(aiEntry);
+                speak(aiText);
+            })
+            .catch(error => {
+                console.error('Error during AI processing:', error);
+            });
+        }
+
+        function speak(text) {
+            // Show processing indicator
+            processingIndicator.style.display = 'block';
+
+            fetch('http://localhost:5000/synthesize-speech', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text }),
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const audioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(audioUrl);
+                
+                // Hide processing indicator when audio playback starts
+                audio.onplay = function() {
+                    processingIndicator.style.display = 'none';
+                };
+
+                audio.play();
+                // Resume listening after the bot has finished speaking
+                audio.onended = function() { recognition.start(); };
+            })
+            .catch(error => {
+                console.error('Error during TTS synthesis:', error);
+            });
+        }
+    </script>
+</body>
+</html>
