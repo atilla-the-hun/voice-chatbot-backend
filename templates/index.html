@@ -245,10 +245,7 @@ recognition.onresult = function (event) {
 
             // Only process the transcript if confidence is above a threshold (e.g., 0.7)
             if (confidence >= 0.7) {
-                startButton.disabled = true;
-                sendTextButton.disabled = true;
                 processSpeech(transcript);
-                recognition.stop();
             } else {
                 // Confidence level is too low, ignore this result
                 console.log('Low confidence:', transcript);
@@ -262,6 +259,7 @@ recognition.onerror = function (event) {
     console.error('Speech recognition error', event.error);
     clearTimeout(listeningTimeout);
     startButton.textContent = "Start Listening";
+    isListening = false;
     startButton.disabled = false;
     sendTextButton.disabled = false;
 };
@@ -326,7 +324,6 @@ function processSpeech(text) {
 
 function speak(text) {
     processingIndicator.style.display = 'block';
-
     startButton.disabled = true;
     sendTextButton.disabled = true;
 
@@ -349,6 +346,10 @@ function speak(text) {
 
         audio.onended = function () {
             processingIndicator.style.display = 'none';
+            isListening = false;
+            startButton.textContent = "Start Listening";
+            startButton.disabled = false;
+            sendTextButton.disabled = false;
             recognition.start();
         };
 
@@ -364,6 +365,7 @@ function reEnableButtons() {
     startButton.disabled = false;
     sendTextButton.disabled = false;
 }
+
 
 
 </script>
