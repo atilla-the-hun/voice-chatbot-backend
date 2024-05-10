@@ -155,7 +155,6 @@ const textInput = document.getElementById('textInput');
 const echoTextEl = document.getElementById('echoText');
 const sendTextButton = document.getElementById('sendTextButton');
 const processingIndicator = document.getElementById('processingIndicator');
-const startButtonContainer = document.getElementById('startButtonContainer');
 
 let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 recognition.lang = 'en-US';
@@ -165,7 +164,7 @@ recognition.continuous = true;
 let isListening = false;
 let chatOpened = false;
 let listeningTimeout = null;
-const TIMEOUT_DELAY_MS = 35000; // 35 seconds in milliseconds
+const TIMEOUT_DELAY_MS = 15000; // 15 seconds in milliseconds
 
 document.addEventListener('DOMContentLoaded', startSession);
 
@@ -186,6 +185,7 @@ function toggleChatContainer() {
         chatContainer.style.display = 'block';
         startButton.disabled = false;
         sendTextButton.disabled = false;
+        resetButton.disabled = false;
     } else {
         chatContainer.style.display = 'none';
         recognition.stop();
@@ -205,8 +205,11 @@ function sendMessage() {
     if (text) {
         processSpeech(text);
         textInput.value = '';
+        
+        // Disable buttons after sending message
         startButton.disabled = true;
         sendTextButton.disabled = true;
+        resetButton.disabled = true;
     }
 }
 
@@ -215,22 +218,25 @@ recognition.onstart = function () {
     startButton.disabled = true;
     startButton.textContent = "Listening...";
     sendTextButton.disabled = true;
+    resetButton.disabled = true;
 
     // Set a timeout to stop recognition after TIMEOUT_DELAY_MS milliseconds
     listeningTimeout = setTimeout(() => {
         if (isListening) {
             recognition.stop();
             isListening = false;
-            startButton.textContent = "Start Listening";
-            startButton.disabled = false;
-            sendTextButton.disabled = false;
+            startButton.textContent = "🎙️ Start Listening";
+            reEnableButtons();
+            resetButton.disabled = false;
+            recognition.stop();
+            isListening = false;
         }
     }, TIMEOUT_DELAY_MS);
 };
 
 recognition.onend = function () {
     isListening = false;
-    startButton.textContent = "Start Listening";
+    startButton.textContent = "🎙️ Start Listening";
     clearTimeout(listeningTimeout);
 };
 
@@ -241,15 +247,11 @@ recognition.onresult = function (event) {
     for (let i = currentResultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
             const transcript = event.results[i][0].transcript.trim();
-            const confidence = event.results[i][0].confidence;
-
-            // Only process the transcript if confidence is above a threshold (e.g., 0.7)
-            if (confidence >= 0.7) {
-                processSpeech(transcript);
-            } else {
-                // Confidence level is too low, ignore this result
-                console.log('Low confidence:', transcript);
-            }
+            startButton.disabled = true;
+            sendTextButton.disabled = true;
+            resetButton.disabled = true;
+            processSpeech(transcript);
+            recognition.stop();
             break;
         }
     }
@@ -258,10 +260,8 @@ recognition.onresult = function (event) {
 recognition.onerror = function (event) {
     console.error('Speech recognition error', event.error);
     clearTimeout(listeningTimeout);
-    startButton.textContent = "Start Listening";
-    isListening = false;
-    startButton.disabled = false;
-    sendTextButton.disabled = false;
+    resetButton.disabled = false;
+    reEnableButtons();
 };
 
 function startSession() {
@@ -278,10 +278,10 @@ function startSession() {
     resetButton.addEventListener('click', function() {
         startButton.disabled = false;
         sendTextButton.disabled = false;
-        resetButton.disabled = true;
+        resetButton.disabled = false;
     });
 
-   // resetButton.style.display = 'none'; // Hide the reset button
+    resetButton.style.display = 'none'; // Hide the reset button
 }
 
 function processSpeech(text) {
@@ -322,10 +322,13 @@ function processSpeech(text) {
     });
 }
 
+
 function speak(text) {
     processingIndicator.style.display = 'block';
+
     startButton.disabled = true;
     sendTextButton.disabled = true;
+    resetButton.disabled = true;
 
     fetch('https://voice-chatbot-backend-2.onrender.com/synthesize-speech', {
         method: 'POST',
@@ -346,10 +349,7 @@ function speak(text) {
 
         audio.onended = function () {
             processingIndicator.style.display = 'none';
-            isListening = false;
-            startButton.textContent = "Start Listening";
-            startButton.disabled = false;
-            sendTextButton.disabled = false;
+            reEnableButtons();
             recognition.start();
         };
 
@@ -365,8 +365,6 @@ function reEnableButtons() {
     startButton.disabled = false;
     sendTextButton.disabled = false;
 }
-
-
 
 </script>
 </body>
