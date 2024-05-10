@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Voice Chatbot</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zoltan's Portfolio</title>
     <style>
+        /* Styles for the floating chat icon and chat container */
         /* Style for the floating chat icon */
         #chatIcon {
             position: fixed;
             bottom: 20px;
-            right: 20px; /* Adjusted to position on the lower right side */
-            z-index: 9999; /* Ensure the icon is always on top */
+            right: 20px;
+            z-index: 9999;
             background-color: #007bff;
             color: #fff;
             width: 50px;
@@ -21,219 +22,350 @@
             text-align: center;
             line-height: 50px;
             cursor: pointer;
+            font-size: 25px; /* Default size for desktop */
         }
 
-        /* Default size for desktop */
-#chatIcon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    font-size: 25px;
-}
-
-/* Smaller size for mobile phones */
-@media only screen and (max-width: 768px) {
-    #chatIcon {
-        width: 40px;
-        height: 40px;
-        line-height: 38px;
-        font-size: 25px;
-    }
-}
+        /* Tooltip style */
+        #chatTooltip {
+            position: fixed;
+            bottom: 25px;
+            right: 85px; /* Adjust as needed */
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 9999;
+            width: 220px; /* Fixed width for the tooltip */
+            white-space: normal; /* Allow text to wrap */
+            display: flex; /* Use flexbox layout */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            text-align: center; /* Align text within the tooltip */
+            cursor: pointer; /* Change cursor to pointer on hover */
+        }
 
         #chatContainer {
-            display: none; /* Hide the chat container initially */
+            display: none;
             position: fixed;
             bottom: 100px;
-            right: 50px; /* Adjust the distance from the right edge */
-            z-index: 9999; /* Ensure the chat container is below the icon */
-            width: 25%; /* Set width to 25% of the viewport */
-            max-width: 320px; /* Set max-width to avoid overly narrow or wide windows */
-            height: 550px; /* Set a fixed height for the chat container */
-            overflow-y: auto; /* Enable vertical scroll bar */
+            right: 50px;
+            z-index: 9999;
+            width: 25%;
+            max-width: 320px;
+            height: 550px;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
-        /* Smaller size for mobile phones */
-@media only screen and (max-width: 768px) {
-    #chatContainer {
-        width: 300px;
-        height: 300px;
-    }
-    #processingIndicator {
-        margin-top: 60px;
-    }
-}
+        @media only screen and (max-width: 768px) {
+            #chatIcon {
+                width: 40px;
+                height: 40px;
+                line-height: 38px;
+            }
+            #chatContainer {
+                width: 300px;
+                height: 500px;
+            }
+        }
+
+        /* Style for the text input */
+        #textInput {
+            margin-top: 20px;
+            width: calc(100% - 20px);
+            padding: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            overflow-y: auto;
+            height: 90px;
+        }
+
+        body {
+            overflow-x: hidden;
+            overflow-y: hidden;
+            margin: 0;
+            padding: 0;
+        }
 
         /* Style for the processing indicator */
         #processingIndicator {
             display: none;
             position: fixed;
-            top: 20px; /* Adjusted to position just above the chat window */
-            right: 160px; /* Adjusted to position on the right side */
+            top: 20px;
+            right: 160px;
             z-index: 9999;
             text-align: center;
-            margin-bottom: 10px; /* Adjust margin as needed */
+            margin-bottom: 10px;
+        }
+
+        /* Style for chat entries */
+        .chat-entry {
+            margin-bottom: 8px;
+        }
+
+        .user-text {
+            color: blue; /* Example color for user's text */
+            word-wrap: break-word; /* Allow long words to wrap */
+        }
+
+        .ai-text {
+            color: green; /* Example color for AI's text */
+            word-wrap: break-word; /* Allow long words to wrap */
         }
     </style>
 </head>
 <body>
-    <!-- Floating chat icon -->
-    <div id="chatIcon">💬</div>
+<div id="root"></div>
 
-    <!-- Chat container -->
-    <div id="chatContainer" class="shadow p-3 bg-white rounded">
-        <h5>Zoltan's AI Voice Assistant</h5>
-        <p>Click "Start Listening" and speak into your device's microphone. 
-            Some devices require your authorization for this AI assistant to use your microphone. 
-            Click "Allow" to continue use of this AI assistant.</p>
-        <div id="startButtonContainer">
-            <button id="startButton" class="btn btn-primary talk-btn">🎙️ Start Listening</button>
-        </div>
-        <div id="echoText" class="mb-3"></div>
+<!-- Floating chat icon -->
+<div id="chatIcon">💬</div>
+
+<!-- Tooltip label -->
+<div id="chatTooltip">Click here to speak to Zoltan's talking AI assistant</div>
+
+<!-- Chat container -->
+<div id="chatContainer" class="shadow p-3 bg-white rounded">
+    <h5 class="chat-title">Zoltan's Talking AI Assistant</h5>
+    <p class="chat-paragraph">Speak to the assistant by clicking on "Start Listening" or type your message below and hit "Send"</p>
+    <div id="startButtonContainer">
+        <button id="startButton" class="btn btn-primary talk-btn">🎙️ Start Listening</button>
+        <textarea id="textInput" placeholder="Type your message..." rows="3"></textarea>
+        <button id="sendTextButton" class="btn btn-primary">Send</button>
     </div>
+    <div id="echoText" class="mb-3"></div>
+</div>
 
-    <!-- Processing indicator -->
-    <div id="processingIndicator">
-        <div class="spinner-border text-primary" role="status">
-            <span class="sr-only">Loading...</span>
-        </div>
-        <p>Processing...</p>
+<!-- Processing indicator -->
+<div id="processingIndicator">
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading...</span>
     </div>
+    <p>Processing...</p>
+</div>
 
-    <script>
-        const chatIcon = document.getElementById('chatIcon');
-        const chatContainer = document.getElementById('chatContainer');
-        const processingIndicator = document.getElementById('processingIndicator');
-        let chatOpened = false;
+<script>
+const chatIcon = document.getElementById('chatIcon');
+const chatTooltip = document.getElementById('chatTooltip');
+const chatContainer = document.getElementById('chatContainer');
+const startButton = document.getElementById('startButton');
+const textInput = document.getElementById('textInput');
+const echoTextEl = document.getElementById('echoText');
+const sendTextButton = document.getElementById('sendTextButton');
+const processingIndicator = document.getElementById('processingIndicator');
 
-        // Toggle visibility of the chat container when the chat icon is clicked
-        chatIcon.addEventListener('click', function() {
-            if (!chatOpened) {
-                // Open the chat container on the first click
-                chatContainer.style.display = 'block';
-                chatOpened = true;
-            } else {
-                // Toggle visibility on subsequent clicks
-                if (chatContainer.style.display === 'none') {
-                    chatContainer.style.display = 'block';
-                } else {
-                    chatContainer.style.display = 'none';
-                }
-            }
-        });
+let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+recognition.lang = 'en-US';
+recognition.interimResults = false;
+recognition.maxAlternatives = 1;
+recognition.continuous = true;
+let isListening = false;
+let chatOpened = false;
+let listeningTimeout = null;
+const TIMEOUT_DELAY_MS = 15000; // 15 seconds in milliseconds
 
-        // Existing JavaScript code related to the chat functionality...
-        const startButton = document.getElementById('startButton');
-        const echoTextEl = document.getElementById('echoText');
-        let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
-        recognition.continuous = true; 
-        let isListening = false;
+document.addEventListener('DOMContentLoaded', startSession);
 
-        document.addEventListener('DOMContentLoaded', startSession);
+chatIcon.addEventListener('click', toggleChatContainer);
+chatTooltip.addEventListener('click', toggleChatContainer); // Add click listener to chatTooltip
+startButton.addEventListener('click', toggleListening);
+sendTextButton.addEventListener('click', sendMessage);
+textInput.addEventListener('keypress', function(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+});
 
-        recognition.onstart = function() {
-            isListening = true;
-            startButton.textContent = "Stop Listening";
-        };
+function toggleChatContainer() {
+    chatOpened = !chatOpened;
 
-        recognition.onend = function() {
+    if (chatOpened) {
+        chatContainer.style.display = 'block';
+        startButton.disabled = false;
+        sendTextButton.disabled = false;
+        resetButton.disabled = false;
+    } else {
+        chatContainer.style.display = 'none';
+        recognition.stop();
+    }
+}
+
+function toggleListening() {
+    if (isListening) {
+        recognition.stop();
+    } else {
+        recognition.start();
+    }
+}
+
+function sendMessage() {
+    const text = textInput.value.trim();
+    if (text) {
+        processSpeech(text);
+        textInput.value = '';
+        
+        // Disable buttons after sending message
+        startButton.disabled = true;
+        sendTextButton.disabled = true;
+        resetButton.disabled = true;
+    }
+}
+
+recognition.onstart = function () {
+    isListening = true;
+    startButton.disabled = true;
+    startButton.textContent = "Listening...";
+    sendTextButton.disabled = true;
+    resetButton.disabled = true;
+
+    // Set a timeout to stop recognition after TIMEOUT_DELAY_MS milliseconds
+    listeningTimeout = setTimeout(() => {
+        if (isListening) {
+            recognition.stop();
             isListening = false;
             startButton.textContent = "🎙️ Start Listening";
+            reEnableButtons();
+            resetButton.disabled = false;
+            recognition.stop();
+            isListening = false;
+        }
+    }, TIMEOUT_DELAY_MS);
+};
+
+recognition.onend = function () {
+    isListening = false;
+    startButton.textContent = "🎙️ Start Listening";
+    clearTimeout(listeningTimeout);
+};
+
+recognition.onresult = function (event) {
+    clearTimeout(listeningTimeout);
+
+    const currentResultIndex = event.resultIndex;
+    for (let i = currentResultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim();
+            startButton.disabled = true;
+            sendTextButton.disabled = true;
+            resetButton.disabled = true;
+            processSpeech(transcript);
+            recognition.stop();
+            break;
+        }
+    }
+};
+
+recognition.onerror = function (event) {
+    console.error('Speech recognition error', event.error);
+    clearTimeout(listeningTimeout);
+    resetButton.disabled = false;
+    reEnableButtons();
+};
+
+function startSession() {
+    // You can add any initialization logic here if needed
+    
+    // Create and append the reset button
+    const resetButton = document.createElement('button');
+    resetButton.id = 'resetButton';
+    resetButton.className = 'btn btn-secondary';
+    resetButton.textContent = 'Enable Disabled Buttons';
+    startButtonContainer.appendChild(resetButton);
+
+    // Add event listener to the reset button
+    resetButton.addEventListener('click', function() {
+        startButton.disabled = false;
+        sendTextButton.disabled = false;
+        resetButton.disabled = false;
+    });
+
+    resetButton.style.display = 'none'; // Hide the reset button
+}
+
+function processSpeech(text) {
+    const userEntry = document.createElement('div');
+    userEntry.className = 'chat-entry user-text'; // Apply user-text class
+    userEntry.innerHTML = `<strong>You:</strong> ${text}`;
+
+    // Prepend the user's chat entry to the top of the chat container
+    echoTextEl.insertBefore(userEntry, echoTextEl.firstChild);
+
+    fetch('http://localhost:5000/process-speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        const aiText = data.response;
+        const aiEntry = document.createElement('div');
+        aiEntry.className = 'chat-entry ai-text';
+        aiEntry.innerHTML = `<strong>AI:</strong> ${aiText}`;
+
+        // Prepend the AI's chat entry to the top of the chat container
+        echoTextEl.insertBefore(aiEntry, echoTextEl.firstChild);
+
+        speak(aiText);
+    })
+    .catch(error => {
+        console.error('Error during AI processing:', error);
+        reEnableButtons();
+    });
+}
+
+
+function speak(text) {
+    processingIndicator.style.display = 'block';
+
+    startButton.disabled = true;
+    sendTextButton.disabled = true;
+    resetButton.disabled = true;
+
+    fetch('http://localhost:5000/synthesize-speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: text }),
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+
+        audio.onended = function () {
+            processingIndicator.style.display = 'none';
+            reEnableButtons();
+            recognition.start();
         };
 
-        recognition.onresult = function(event) {
-            const currentResultIndex = event.resultIndex;
+        audio.play();
+    })
+    .catch(error => {
+        console.error('Error during TTS synthesis:', error);
+        reEnableButtons();
+    });
+}
 
-            for (let i = currentResultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    const transcript = event.results[i][0].transcript.trim();
-                    processSpeech(transcript);
-                    recognition.stop(); // Stop listening immediately after detecting final user speech
-                    break; // Exit loop after processing the final result
-                }
-            }
-        };
+function reEnableButtons() {
+    startButton.disabled = false;
+    sendTextButton.disabled = false;
+}
 
-        recognition.onerror = function(event) {
-            console.error('Speech recognition error', event.error);
-        };
-
-        startButton.addEventListener('click', function() {
-            if (isListening) {
-                recognition.stop();
-            } else {
-                recognition.start();
-            }
-        }, false);
-
-        function startSession() {
-            fetch('http://localhost:5000/start-speech', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-        }
-
-        function processSpeech(text) {
-            const userEntry = document.createElement('div');
-            userEntry.className = 'chat-entry user-text';
-            userEntry.innerHTML = `<strong>You:</strong> ${text}`;
-            echoTextEl.prepend(userEntry);
-            
-            fetch('http://localhost:5000/process-speech', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text: text }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                const aiText = data.response;
-                const aiEntry = document.createElement('div');
-                aiEntry.className = 'chat-entry ai-text';
-                aiEntry.innerHTML = `<strong>AI:</strong> ${aiText}`;
-                echoTextEl.prepend(aiEntry);
-                speak(aiText);
-            })
-            .catch(error => {
-                console.error('Error during AI processing:', error);
-            });
-        }
-
-        function speak(text) {
-            // Show processing indicator
-            processingIndicator.style.display = 'block';
-
-            fetch('http://localhost:5000/synthesize-speech', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ text: text }),
-            })
-            .then(response => response.blob())
-            .then(blob => {
-                const audioUrl = URL.createObjectURL(blob);
-                const audio = new Audio(audioUrl);
-                
-                // Hide processing indicator when audio playback starts
-                audio.onplay = function() {
-                    processingIndicator.style.display = 'none';
-                };
-
-                audio.play();
-                // Resume listening after the bot has finished speaking
-                audio.onended = function() { recognition.start(); };
-            })
-            .catch(error => {
-                console.error('Error during TTS synthesis:', error);
-            });
-        }
-    </script>
+</script>
 </body>
 </html>
