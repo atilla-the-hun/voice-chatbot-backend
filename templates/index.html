@@ -245,9 +245,8 @@ recognition.onresult = function (event) {
 
     const currentResultIndex = event.resultIndex;
     for (let i = currentResultIndex; i < event.results.length; ++i) {
-        const result = event.results[i];
-        if (result.isFinal && result[0].confidence > 0.5) { // Check confidence threshold
-            const transcript = result[0].transcript.trim();
+        if (event.results[i].isFinal) {
+            const transcript = event.results[i][0].transcript.trim();
             startButton.disabled = true;
             sendTextButton.disabled = true;
             resetButton.disabled = true;
@@ -293,7 +292,7 @@ function processSpeech(text) {
     // Prepend the user's chat entry to the top of the chat container
     echoTextEl.insertBefore(userEntry, echoTextEl.firstChild);
 
-    fetch('https://voice-chatbot-backend-2.onrender.com/process-speech', {
+    fetch('http://localhost:5000/process-speech', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -331,7 +330,7 @@ function speak(text) {
     sendTextButton.disabled = true;
     resetButton.disabled = true;
 
-    fetch('https://voice-chatbot-backend-2.onrender.com/synthesize-speech', {
+    fetch('http://localhost:5000/synthesize-speech', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
