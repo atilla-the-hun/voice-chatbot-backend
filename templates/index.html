@@ -292,7 +292,7 @@ function processSpeech(text) {
     // Prepend the user's chat entry to the top of the chat container
     echoTextEl.insertBefore(userEntry, echoTextEl.firstChild);
 
-    fetch('http://localhost:5000/process-speech', {
+    fetch('https://voice-chatbot-backend-2.onrender.com/process-speech', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -330,7 +330,7 @@ function speak(text) {
     sendTextButton.disabled = true;
     resetButton.disabled = true;
 
-    fetch('http://localhost:5000/synthesize-speech', {
+    fetch('https://voice-chatbot-backend-2.onrender.com/synthesize-speech', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
